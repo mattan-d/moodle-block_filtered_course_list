@@ -20,65 +20,91 @@
  * @copyright  2016 CLAMP
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-define(['jquery', 'block_filtered_course_list/cookie'], function($, cookie) {
+var define =
+    window.define ||
+    ((dependencies, callback) => {
+      var $ = window.jQuery;
+      callback($);
+    });
 
-    /**
-     * Expand a rubric.
-     *
-     * @function expandRubric
-     * @param {Element} rubric
-     * @param {Integer} persist
-     */
-    function expandRubric(rubric, persist) {
-        $(rubric).removeClass('block-fcl__rubric--collapsed');
-        $(rubric).addClass('block-fcl__rubric--expanded');
-        $(rubric).attr('aria-expanded', 'true');
-        $(rubric).next().attr('aria-hidden', 'false');
-        if (persist == 1) {
-            cookie.set(rubric.dataset.hash, 'expanded');
-        }
+define(['jquery'], ($) => {
+  /**
+   * Simple storage helper using localStorage
+   */
+  var storage = {
+    set: (key, value) => {
+      try {
+        localStorage.setItem('block_fcl_' + key, value);
+      } catch (e) {
+        // Silently fail if localStorage is not available
+      }
+    },
+    get: (key) => {
+      try {
+        return localStorage.getItem('block_fcl_' + key);
+      } catch (e) {
+        return null;
+      }
+    },
+  };
+
+  /**
+   * Expand a rubric.
+   *
+   * @function expandRubric
+   * @param {Element} rubric
+   * @param {Integer} persist
+   */
+  function expandRubric(rubric, persist) {
+    $(rubric).removeClass('block-fcl__rubric--collapsed');
+    $(rubric).addClass('block-fcl__rubric--expanded');
+    $(rubric).attr('aria-expanded', 'true');
+    $(rubric).next().attr('aria-hidden', 'false');
+    if (persist == 1) {
+      storage.set(rubric.dataset.hash, 'expanded');
     }
+  }
 
-    /**
-     * Collapse a rubric.
-     *
-     * @function collapseRubric
-     * @param {Element} rubric
-     * @param {Integer} persist
-     */
-    function collapseRubric(rubric, persist) {
-        $(rubric).removeClass('block-fcl__rubric--expanded');
-        $(rubric).addClass('block-fcl__rubric--collapsed');
-        $(rubric).attr('aria-expanded', 'false');
-        $(rubric).next().attr('aria-hidden', 'true');
-        if (persist == 1) {
-            cookie.set(rubric.dataset.hash, 'collapsed');
-        }
+  /**
+   * Collapse a rubric.
+   *
+   * @function collapseRubric
+   * @param {Element} rubric
+   * @param {Integer} persist
+   */
+  function collapseRubric(rubric, persist) {
+    $(rubric).removeClass('block-fcl__rubric--expanded');
+    $(rubric).addClass('block-fcl__rubric--collapsed');
+    $(rubric).attr('aria-expanded', 'false');
+    $(rubric).next().attr('aria-hidden', 'true');
+    if (persist == 1) {
+      storage.set(rubric.dataset.hash, 'collapsed');
     }
+  }
 
-    return {
-        init: function(params) {
-            var blockid = params.blockid;
-            $('#' + blockid + ' .block-fcl__rubric').each(function() {
-                var state = cookie.get(this.dataset.hash);
-                if (!($(this).hasClass('block-fcl__rubric--expanded')) && (!state || state == 'collapsed')) {
-                    collapseRubric(this, params.persist);
-                }
-                $(this).wrapInner(document.createElement('a'));
-                $(this).find('a').attr('href', '#');
-                $(this).on('click', function(event) {
-                    event.preventDefault();
-                    $('.block-fcl__rubric').each(function() {
-                        $(this).attr('aria-selected', 'false');
-                    });
-                    $(this).attr('aria-selected', 'true');
-                    if ($(this).hasClass('block-fcl__rubric--collapsed')) {
-                        expandRubric(this, params.persist);
-                    } else if ($(this).hasClass('block-fcl__rubric--expanded')) {
-                        collapseRubric(this, params.persist);
-                    }
-                });
-            });
+  return {
+    init: (params) => {
+      var blockid = params.blockid;
+      $('#' + blockid + ' .block-fcl__rubric').each(function() {
+        var state = storage.get(this.dataset.hash);
+        if (!$(this).hasClass('block-fcl__rubric--expanded') && (!state || state == 'collapsed')) {
+          collapseRubric(this, params.persist);
         }
-    };
+        $(this).wrapInner(document.createElement('a'));
+        $(this).find('a').attr('href', '#');
+        $(this).on('click', function(event) {
+          event.preventDefault();
+          $('.block-fcl__rubric').each(function() {
+            $(this).attr('aria-selected', 'false');
+          });
+          $(this).attr('aria-selected', 'true');
+          if ($(this).hasClass('block-fcl__rubric--collapsed')) {
+            expandRubric(this, params.persist);
+          } else if ($(this).hasClass('block-fcl__rubric--expanded')) {
+            collapseRubric(this, params.persist);
+          }
+        });
+      });
+    },
+  };
 });

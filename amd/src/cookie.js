@@ -1,1 +1,0 @@
-define(['block_filtered_course_list/config', 'cookie'], (unused, Cookies) => Cookies);
