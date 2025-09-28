@@ -20,12 +20,11 @@
  * @copyright  2016 CLAMP
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-var define =
-    window.define ||
-    ((dependencies, callback) => {
-      var $ = window.jQuery;
-      callback($);
-    });
+
+/* eslint-env amd */
+/* global define */
+
+var define = window.define; // Declare the define variable
 
 define(['jquery'], ($) => {
   /**
