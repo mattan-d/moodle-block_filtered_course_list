@@ -65,7 +65,7 @@ class block_filtered_course_list extends block_base {
     }
 
     /**
-     * Set the instance title and merge instance config as soon as nstance data is loaded
+     * Set the instance title and merge instance config as soon as instance data is loaded
      */
     public function specialization() {
 
@@ -128,14 +128,14 @@ class block_filtered_course_list extends block_base {
         $this->content->footer = '';
 
         $sortsettings = [
-            [
-                $this->fclconfig->primarysort,
-                $this->fclconfig->primaryvector,
-            ],
-            [
-                $this->fclconfig->secondarysort,
-                $this->fclconfig->secondaryvector,
-            ],
+                [
+                        $this->fclconfig->primarysort,
+                        $this->fclconfig->primaryvector,
+                ],
+                [
+                        $this->fclconfig->secondarysort,
+                        $this->fclconfig->secondaryvector,
+                ],
         ];
 
         $sortstring = "visible DESC";
@@ -148,7 +148,33 @@ class block_filtered_course_list extends block_base {
             }
         }
 
-        $this->mycourses = enrol_get_my_courses(null, "$sortstring");
+        $this->mycourses = enrol_get_my_courses(['id', 'shortname', 'fullname', 'visible', 'startdate', 'enddate']);
+
+        // Sort the courses manually if we have a sort string
+        if (!empty($sortstring) && !empty($this->mycourses)) {
+            // Parse the sort string to determine sort field and direction
+            $sortparts = explode(',', $sortstring);
+            $sortfield = 'fullname'; // default
+            $sortdir = 'ASC'; // default
+
+            if (!empty($sortparts[0])) {
+                $firstsort = trim($sortparts[0]);
+                $parts = explode(' ', $firstsort);
+                if (count($parts) >= 2) {
+                    $sortfield = trim($parts[0]);
+                    $sortdir = strtoupper(trim($parts[1]));
+                }
+            }
+
+            // Sort the courses array
+            usort($this->mycourses, function($a, $b) use ($sortfield, $sortdir) {
+                $aval = isset($a->$sortfield) ? $a->$sortfield : '';
+                $bval = isset($b->$sortfield) ? $b->$sortfield : '';
+
+                $result = strcasecmp($aval, $bval);
+                return ($sortdir === 'DESC') ? -$result : $result;
+            });
+        }
 
         $this->_calculate_usertype();
         $this->liststyle = $this->_set_liststyle();
@@ -162,9 +188,9 @@ class block_filtered_course_list extends block_base {
 
         $output = $this->page->get_renderer('block_filtered_course_list');
         $params = [
-            'usertype'           => $this->usertype,
-            'liststyle'          => $this->liststyle,
-            'hideallcourseslink' => $this->fclconfig->hideallcourseslink,
+                'usertype'           => $this->usertype,
+                'liststyle'          => $this->liststyle,
+                'hideallcourseslink' => $this->fclconfig->hideallcourseslink,
         ];
         $footer = new \block_filtered_course_list\output\footer($params);
         $this->content->footer = $output->render($footer);
@@ -202,7 +228,7 @@ class block_filtered_course_list extends block_base {
         }
 
         if ($this->usertype == 'manager' &&
-            $this->fclconfig->managerview != BLOCK_FILTERED_COURSE_LIST_ADMIN_VIEW_OWN) {
+                $this->fclconfig->managerview != BLOCK_FILTERED_COURSE_LIST_ADMIN_VIEW_OWN) {
             $liststyle = "generic_list";
         }
 
@@ -229,19 +255,19 @@ class block_filtered_course_list extends block_base {
 
         // Get the arrays of rubrics based on the config lines, filter out failures, and merge them into one array.
         $this->rubrics = array_reduce(
-            array_filter(
-                array_map(function($config) {
-                    $classname = get_filter($config[0], $this->fclconfig->externalfilters);
-                    if (!empty($classname) && class_exists($classname)) {
-                        $item = new $classname($config, $this->mycourses, $this->fclconfig);
-                        return $item->get_rubrics();
-                    }
-                    return null;
-                }, $filterconfigs), function($item) {
+                array_filter(
+                        array_map(function($config) {
+                            $classname = get_filter($config[0], $this->fclconfig->externalfilters);
+                            if (!empty($classname) && class_exists($classname)) {
+                                $item = new $classname($config, $this->mycourses, $this->fclconfig);
+                                return $item->get_rubrics();
+                            }
+                            return null;
+                        }, $filterconfigs), function($item) {
                     return is_array($item);
                 }
-            ),
-        'array_merge', []);
+                ),
+                'array_merge', []);
 
         if ($this->fclconfig->hideothercourses == BLOCK_FILTERED_COURSE_LIST_FALSE &&
                 $this->liststyle != 'generic_list') {
@@ -256,7 +282,7 @@ class block_filtered_course_list extends block_base {
 
             if (!empty($othercourses)) {
                 $otherrubric = new block_filtered_course_list_rubric(get_string('othercourses',
-                    'block_filtered_course_list'), $othercourses, $this->fclconfig);
+                        'block_filtered_course_list'), $othercourses, $this->fclconfig);
                 $this->rubrics[] = $otherrubric;
             }
         }
